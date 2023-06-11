@@ -34,9 +34,15 @@ class LoginModel(BaseModel):
 class OrderModel(BaseModel):
     id: int | None
     quantity: int
-    order_status: str = "PENDING"
-    pizza_size: str = "SMALL"
+    order_status: str | None = "PENDING"
+    pizza_size: str | None = "SMALL"
     user_id: int | None
     
     class Config: 
         orm_mode = True
+        schema_extra = {
+            "example": {
+                "quantity": 2,
+                "pizza_size": "LARGE",
+            }
+        }
