@@ -1,13 +1,13 @@
 from pydantic import BaseModel, EmailStr
-from typing import Optional 
+
 
 class SignUpModel(BaseModel):
-    id: Optional[int]
+    id: int | None
     username: str 
     email: EmailStr
     password: str
-    is_staff: Optional[bool]
-    is_active: Optional[bool]
+    is_staff: bool | None
+    is_active: bool | None
     
     class Config: 
         orm_mode=True 
@@ -29,4 +29,14 @@ class Settings(BaseModel):
 class LoginModel(BaseModel):
     username: str 
     password: str 
+
+
+class OrderModel(BaseModel):
+    id: int | None
+    quantity: int
+    order_status: str = "PENDING"
+    pizza_size: str = "SMALL"
+    user_id: int | None
     
+    class Config: 
+        orm_mode = True
