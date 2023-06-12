@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi_jwt_auth import AuthJWT
 from fastapi.encoders import jsonable_encoder
 from models import User, Order
-from schemas import OrderModel
+from schemas import OrderModel, OrderStatusModel
 from database import Session, engine
 
 
@@ -130,3 +130,41 @@ async def get_specific_order(id: int, Authorize: AuthJWT=Depends()):
     
     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                         detail="No order with such id")
+    
+@order_router.put('/order/update/{order_id}')
+async def update_order(order_id: int, order: OrderModel, Authorize: AuthJWT=Depends()):
+    try: 
+        Authorize.jwt_required()
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                            detail="Invalid Token")
+        
+    update_order: OrderModel = session.query(Order).filter(Order.id==order_id).first()
+    update_order.quantity = order.quantity
+    update_order.pizza_size = order.pizza_size
+    
+    session.commit()
+    
+    return jsonable_encoder(update_order)
+
+@order_router.patch('/order/status/{order_id}')
+async def update_order_status(order_id: int, 
+                              order: OrderStatusModel,
+                              Authorize: AuthJWT=Depends()):
+    try: 
+        Authorize.jwt_required()
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                            detail="Invalid Token")
+        
+    user = Authorize.get_jwt_subject()
+    
+    current_user = session.query(User).filter(User.username==user).first()
+    
+    if current_user.is_staff: 
+        update_order: OrderModel = session.query(Order).filter(Order.id==order_id).first()
+        update_order.order_status = order.order_status
+        
+        session.commit()
+        
+        return jsonable_encoder(update_order)
