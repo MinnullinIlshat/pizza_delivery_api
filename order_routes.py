@@ -12,21 +12,9 @@ order_router = APIRouter(
     tags=['orders']
 ) 
 
-
 session = Session(bind=engine)
 
-@order_router.get('/')
-async def hello(Authorize: AuthJWT=Depends()):
-    try: 
-        Authorize.jwt_required()
-    except Exception as e: 
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid Token"
-        )
-    return {"message": "Hello World!"}
-
-@order_router.post('/order', status_code=status.HTTP_201_CREATED)
+@order_router.post('/', status_code=status.HTTP_201_CREATED)
 async def place_an_order(order: OrderModel, Authorize: AuthJWT=Depends()):
     try: 
         Authorize.jwt_required()
@@ -58,7 +46,7 @@ async def place_an_order(order: OrderModel, Authorize: AuthJWT=Depends()):
     
     return jsonable_encoder(response)
 
-@order_router.get('/orders')
+@order_router.get('/all')
 async def list_all_orders(Authorize: AuthJWT=Depends()):
     try: 
         Authorize.jwt_required()
@@ -77,7 +65,7 @@ async def list_all_orders(Authorize: AuthJWT=Depends()):
     raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
                         detail="You are not a superuser")
     
-@order_router.get('/orders/{id}')
+@order_router.get('/{id}')
 async def get_order_by_id(id: int, Authorize: AuthJWT=Depends()):
     try: 
         Authorize.jwt_required()
@@ -97,7 +85,7 @@ async def get_order_by_id(id: int, Authorize: AuthJWT=Depends()):
     raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
                         detail="User not allowed to carry out request")
     
-@order_router.get('/user/orders')
+@order_router.get('/')
 async def get_user_orders(Authorize: AuthJWT=Depends()):
     try: 
         Authorize.jwt_required()
@@ -106,12 +94,10 @@ async def get_user_orders(Authorize: AuthJWT=Depends()):
                             detail="Invalid Token")
         
     user = Authorize.get_jwt_subject()
-    
     current_user = session.query(User).filter(User.username==user).first()
-    
     return jsonable_encoder(current_user.orders)
 
-@order_router.get('/user/order/{id}')
+@order_router.get('/my/{id}')
 async def get_specific_order(id: int, Authorize: AuthJWT=Depends()):
     try: 
         Authorize.jwt_required()
@@ -131,15 +117,15 @@ async def get_specific_order(id: int, Authorize: AuthJWT=Depends()):
     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                         detail="No order with such id")
     
-@order_router.put('/order/update/{order_id}')
-async def update_order(order_id: int, order: OrderModel, Authorize: AuthJWT=Depends()):
+@order_router.put('/{id}')
+async def update_order(id: int, order: OrderModel, Authorize: AuthJWT=Depends()):
     try: 
         Authorize.jwt_required()
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
                             detail="Invalid Token")
         
-    update_order: OrderModel = session.query(Order).filter(Order.id==order_id).first()
+    update_order: OrderModel = session.query(Order).filter(Order.id==id).first()
     update_order.quantity = order.quantity
     update_order.pizza_size = order.pizza_size
     
@@ -147,8 +133,8 @@ async def update_order(order_id: int, order: OrderModel, Authorize: AuthJWT=Depe
     
     return jsonable_encoder(update_order)
 
-@order_router.patch('/order/status/{order_id}')
-async def update_order_status(order_id: int, 
+@order_router.patch('/{id}')
+async def update_order_status(id: int, 
                               order: OrderStatusModel,
                               Authorize: AuthJWT=Depends()):
     try: 
@@ -162,7 +148,7 @@ async def update_order_status(order_id: int,
     current_user = session.query(User).filter(User.username==user).first()
     
     if current_user.is_staff: 
-        update_order: OrderModel = session.query(Order).filter(Order.id==order_id).first()
+        update_order: OrderModel = session.query(Order).filter(Order.id==id).first()
         update_order.order_status = order.order_status
         
         session.commit()
@@ -176,7 +162,7 @@ async def update_order_status(order_id: int,
         
         return jsonable_encoder(response)
     
-@order_router.delete('/order/delete/{id}',
+@order_router.delete('/{id}',
                      status_code=status.HTTP_204_NO_CONTENT)
 async def delete_an_order(id: int, Authorize: AuthJWT=Depends()):
     try: 
